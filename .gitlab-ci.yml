@@ -11,7 +11,8 @@ stages:
   - deploy
 
 before_script:
-  - apk add --no-cache docker-compose openssh
+  - apt-get update -y && apt-get install -y openssh-client rsync
+  - apk add --no-cache docker-compose
 
 test:
   stage: test
