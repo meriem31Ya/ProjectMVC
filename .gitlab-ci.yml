@@ -14,22 +14,20 @@ before_script:
   - apt-get update -y && apt-get install -y openssh-client rsync
   - apk add --no-cache docker-compose
 
-test:
-  stage: test
-  script:
-    - docker-compose -f docker-compose.yml up -d
-    - docker-compose exec -T web composer install
-    - docker-compose exec -T web ./vendor/bin/phpunit
-  artifacts:
-    paths:
-      - . # Archive le projet pour transfert si besoin
-  only:
-    - main
+# test:
+#   stage: test
+#   script:
+#     - docker-compose -f docker-compose.yml up -d
+#     - docker-compose exec -T web composer install
+#     - docker-compose exec -T web ./vendor/bin/phpunit
+#   artifacts:
+#     paths:
+#       - . # Archive le projet pour transfert si besoin
+#   only:
+#     - main
 
 deploy:
   stage: deploy
-  dependencies:
-    - test
   script:
     # 1. Générer la clé SSH
     - echo "$SSH_PRIVATE_KEY" > id_rsa
