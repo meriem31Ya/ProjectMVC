@@ -5,35 +5,43 @@ services:
 
 variables:
   DOCKER_DRIVER: overlay2
-  COMPOSER_CACHE_DIR: "/cache/composer"
 
 stages:
-  - build
   - test
+  - deploy
 
 before_script:
-  - apk add --no-cache docker-compose
-  - docker info
-  - docker-compose -f docker-compose.yml pull
-  - docker-compose -f docker-compose.yml build
-
-build:
-  stage: build
-  script:
-    - echo "Build terminé"
-  only:
-    - main
+  - apk add --no-cache docker-compose openssh
 
 test:
   stage: test
   script:
     - docker-compose -f docker-compose.yml up -d
-    - docker-compose exec -T app composer install
-    - docker-compose exec -T app ./vendor/bin/phpunit --coverage-text --coverage-clover=coverage.xml
+    - docker-compose exec -T web composer install
+    - docker-compose exec -T web ./vendor/bin/phpunit
   artifacts:
-    reports:
-      coverage_report:
-        coverage_format: cobertura
-        path: coverage.xml
+    paths:
+      - . # Archive le projet pour transfert si besoin
+  only:
+    - main
+
+deploy:
+  stage: deploy
+  dependencies:
+    - test
+  script:
+    # 1. Générer la clé SSH
+    - echo "$SSH_PRIVATE_KEY" > id_rsa
+    - chmod 600 id_rsa
+
+    # 2. Transférer les fichiers vers le VPS en excluant ceux listés
+    - rsync -avz --exclude-from='.deploy-exclude' -e "ssh -i id_rsa -o StrictHostKeyChecking=no" ./ root@195.15.235.155:/var/www/mon-projet/
+
+    # 3. Connexion SSH + Redéploiement
+    - ssh -i id_rsa -o StrictHostKeyChecking=no user@ip_du_vps "
+      cd /var/www/mon-projet &&
+      docker compose down &&
+      docker compose up -d --build
+      "
   only:
     - main
