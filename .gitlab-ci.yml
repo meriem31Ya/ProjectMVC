@@ -28,6 +28,7 @@ before_script:
 
 deploy:
   stage: deploy
+
   script:
     # 1. Générer la clé SSH
     - echo "$SSH_PRIVATE_KEY" > id_rsa
